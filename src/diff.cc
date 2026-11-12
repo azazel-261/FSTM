@@ -41,9 +41,6 @@ namespace FSTM::Diff
     {
         if (source.at(iSource) != modified.at(iModified))
         {
-            std::cout << source.at(iSource) << " != " << modified.at(iModified) << std::endl;
-            std::cout << "Starting modified segment test\n";
-
             // Find a point where we can reconnect to source
             const auto modifiedSegmentStart = iModified;
             const auto sourceSegmentStart = iSource;
@@ -55,17 +52,11 @@ namespace FSTM::Diff
                 // See if we landed back onto a part of the source
                 for (;iSource < source.size(); ++iSource)
                 {
-                    std::cout << "Reconnecting to source part: " << source.at(iSource) << std::endl;
                     if (source.at(iSource) == modified.at(iModified))
                     {
-                        std::cout << "Successfully reconnected to source part: " << source.at(iSource) << std::endl;;
                         return {sourceSegmentStart, iSource, modifiedSegmentStart, iModified};
                     }
-                    std::cout << source.at(iSource) << " != " << modified.at(iModified) << std::endl;
-                    std::cout << "Couldn't reconnect to source part: " << source.at(iSource) << std::endl;;
                 }
-
-                std::cout << "Modified " << modified.at(iModified) << " couldn't connect to source\n";
             }
 
             // If not, we just say that the modifications affect the rest of the file
@@ -84,9 +75,6 @@ namespace FSTM::Diff
 
         while (true)
         {
-            std::cout << "Testing lines:\n";
-            std::cout << "Original: " << source.at(iSource) << std::endl;
-            std::cout << "Modified: " << modified.at(iModified) << std::endl;
             if (source.at(iSource) != modified.at(iModified))
             {
                 // Find a point where we can reconnect to source
@@ -96,14 +84,14 @@ namespace FSTM::Diff
                 {
                     for (size_t i = segment.sourceStart; i < segment.sourceEnd; ++i)
                     {
-                        out.emplace_back(DELETE, i, source.at(i), "");
+                        out.emplace_back(REMOVE, i, source.at(i), "");
                     }
                 }
                 if (segment.modifiedStart != segment.modifiedEnd)
                 {
                     for (size_t i = segment.modifiedStart; i < segment.modifiedEnd; ++i)
                     {
-                        out.emplace_back(CREATE, i, "", modified.at(i));
+                        out.emplace_back(INSERT, i, "", modified.at(i));
                     }
                 }
             }
@@ -112,13 +100,11 @@ namespace FSTM::Diff
 
             if (iSource >= source.size())
             {
-                std::cout << "Reached the end of source\n";
-
                 if (iModified < modified.size())
                 {
                     for (; iModified < modified.size(); ++iModified)
                     {
-                        out.emplace_back(CREATE, iModified, "", modified.at(iModified));
+                        out.emplace_back(INSERT, iModified, "", modified.at(iModified));
                     }
                 }
 
@@ -126,13 +112,11 @@ namespace FSTM::Diff
             }
             if (iModified >= modified.size())
             {
-                std::cout << "Reached the end of modified\n";
-
                 if (iSource < source.size())
                 {
                     for (; iSource < source.size(); ++iSource)
                     {
-                        out.emplace_back(DELETE, iSource, source.at(iModified), "");
+                        out.emplace_back(REMOVE, iSource, source.at(iModified), "");
                     }
                 }
 

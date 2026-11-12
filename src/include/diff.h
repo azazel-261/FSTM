@@ -11,8 +11,8 @@ namespace FSTM::Diff
     enum DiffAction
     {
         NO_ACTION = 0,
-        CREATE = 1,
-        DELETE = 2,
+        INSERT = 1,
+        REMOVE = 2,
         MODIFY = 3
     };
 
