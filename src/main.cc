@@ -18,18 +18,15 @@ int main(int argc, char *argv[])
     }*/
 
     /*if (argc < 2)
-        return -1;
+        return -1;*/
 
     std::string repoPath = ".";
-    trackFile(repoPath, "example_folder/example3.txt");*/
+    // trackFile(repoPath, "example_folder/example3.txt");
 
-    std::string f1hash = FSTM::Diff::hashFile("./example.txt");
-    std::string f2hash = FSTM::Diff::hashFile("./example2.txt");
-
-    std::cout << f1hash << std::endl;
-    std::cout << f2hash << std::endl;
-
-    std::cout << (f1hash == f2hash) << std::endl;
+    for (const auto &p : getTrackableFiles(repoPath))
+    {
+        std::cout << p << std::endl;
+    }
 
     return 0;
 }
