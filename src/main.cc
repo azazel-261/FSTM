@@ -17,11 +17,19 @@ int main(int argc, char *argv[])
         std::cout << d.targetLine << ": " << d.oldContent << " -> " << d.newContent << std::endl;
     }*/
 
-    if (argc < 2)
+    /*if (argc < 2)
         return -1;
 
-    std::string repoPath = argv[1];
-    trackFile(repoPath, "example.txt");
+    std::string repoPath = ".";
+    trackFile(repoPath, "example_folder/example3.txt");*/
+
+    std::string f1hash = FSTM::Diff::hashFile("./example.txt");
+    std::string f2hash = FSTM::Diff::hashFile("./example2.txt");
+
+    std::cout << f1hash << std::endl;
+    std::cout << f2hash << std::endl;
+
+    std::cout << (f1hash == f2hash) << std::endl;
 
     return 0;
 }

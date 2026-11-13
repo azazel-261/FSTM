@@ -17,6 +17,10 @@ bool checkIfIgnored(const std::string& _repositoryPath, const std::string &_file
 {
     std::ifstream blacklistFile(_repositoryPath + "/.fstm/blacklist",std::ios_base::app);
 
+    std::filesystem::path targetFile = _filePath;
+
+    if (!std::filesystem::exists(targetFile)) return true;
+
     if (!blacklistFile)
     {
         blacklistFile.close();
@@ -27,8 +31,11 @@ bool checkIfIgnored(const std::string& _repositoryPath, const std::string &_file
 
     while (std::getline(blacklistFile, buffer))
     {
+        std::filesystem::path toCheck = buffer;
+        if (!std::filesystem::exists(toCheck)) continue;
+
         if (is_subpath(_filePath, buffer) ||
-            std::filesystem::equivalent(std::filesystem::path(_filePath), std::filesystem::path(buffer))) {
+            std::filesystem::equivalent(targetFile, toCheck)) {
             blacklistFile.close();
             return true;
         };

@@ -24,6 +24,8 @@ namespace FSTM::Diff
         size_t modifiedEnd;
     };
 
+    std::string hashFile(const std::string &_path);
+
     class Diff
     {
     public:
@@ -44,10 +46,7 @@ namespace FSTM::Diff
             char *_oldContent, size_t _oldContentLength,
             char *_newContent, size_t _newContentLength);
 
-        static bool compare(const char *_oldContent,
-            size_t _oldContentLength,
-            const char *_newContent,
-            size_t _newContentLength);
+        static bool compare(const std::string &src, const std::string &mod);
     };
 
     class PartialFileDiff : public Diff

@@ -1,9 +1,48 @@
 #include "include/diff.h"
 
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <openssl/sha.h>
 
 namespace FSTM::Diff
 {
+    std::string hashFile(const std::string &_path)
+    {
+        std::ifstream stream(_path, std::ios::binary);
+
+        if (!stream)
+        {
+            throw std::runtime_error("Failed to open file for hashing");
+        }
+
+        SHA256_CTX context;
+
+        SHA256_Init(&context);
+
+        char buffer[8192];
+
+        while (stream.read(buffer, sizeof(buffer)) || stream.gcount() > 0)
+        {
+            SHA256_Update(&context, buffer, stream.gcount());
+        }
+
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+        SHA256_Final(hash, &context);
+
+        std::ostringstream res;
+
+        for (unsigned char byte : hash)
+        {
+            res << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+        }
+
+        stream.close();
+
+        return res.str();
+    }
+
     Diff::Diff(const DiffAction _action)
     {
         this -> action = _action;
@@ -127,11 +166,17 @@ namespace FSTM::Diff
         return out;
     }
 
-    bool FileDiff::compare(const char *_oldContent, const size_t _oldContentLength,
-        const char *_newContent, const size_t _newContentLength)
+    bool FileDiff::compare(const std::string &src, const std::string &mod)
     {
-        if (_oldContentLength != _newContentLength) return true;
+        std::ifstream srcStream(src, std::ios::binary | std::ios::ate);
+        std::ifstream modStream(mod, std::ios::binary | std::ios::ate);
 
-        return memcmp(_oldContent, _newContent, _oldContentLength);
+        if (srcStream.fail() || modStream.fail()) return false;
+
+        if (srcStream.tellg() != modStream.tellg()) return false;
+
+        srcStream.close(); modStream.close();
+
+        return hashFile(src) == hashFile(mod);
     }
 }

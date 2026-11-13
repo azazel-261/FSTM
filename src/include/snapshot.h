@@ -14,22 +14,9 @@ namespace FSTM::Snapshots
         std::string id;
         Snapshot *parent;
 
-        Snapshot(const std::string &_id, Snapshot *_parent);
-    };
-
-    class FullSnapshot : public Snapshot
-    {
-    public:
         std::vector<std::string> filePaths;
 
-        FullSnapshot(const std::string &_id, Snapshot *_parent, const std::vector<std::string> &_filePaths);
-    };
-
-    class DiffSnapshot : public Snapshot
-    {
-        std::vector<std::pair<std::string, std::vector<Diff::Diff>>> pathDiffs;
-
-        DiffSnapshot(const std::string& _id, Snapshot *_parent, const std::vector<std::pair<std::string, std::vector<Diff::Diff>>> &_pathDiffs);
+        Snapshot(const std::string &_id, Snapshot *_parent, std::vector<std::string> _filePaths);
     };
 }
 
