@@ -8,15 +8,20 @@
 
 namespace FSTM::Snapshots
 {
+    std::string generateSnapshotHash(const std::vector<std::string> &_filePaths);
+
     class Snapshot
     {
     public:
         std::string id;
-        Snapshot *parent;
+        std::string parentId;
 
         std::vector<std::string> filePaths;
 
-        Snapshot(const std::string &_id, Snapshot *_parent, std::vector<std::string> _filePaths);
+        Snapshot(const std::string &_id, const std::string &_parentId, std::vector<std::string> _filePaths);
+        Snapshot(const std::string &_parentId, std::vector<std::string> _filePaths);
+
+        void record(const std::string &_repositoryPath) const;
     };
 }
 

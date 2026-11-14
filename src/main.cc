@@ -4,6 +4,8 @@
 #include "include/init.h"
 #include "include/tracker.h"
 
+using namespace FSTM;
+
 int main(int argc, char *argv[])
 {
     /*auto diff = FSTM::Diff::PartialFileDiff::findFileDiff({
@@ -23,10 +25,19 @@ int main(int argc, char *argv[])
     std::string repoPath = ".";
     // trackFile(repoPath, "example_folder/example3.txt");
 
-    for (const auto &p : getTrackableFiles(repoPath))
+    const auto trackableFiles = Tracker::getTrackableFiles(repoPath);
+
+    /*for (const auto &p : trackableFiles)
     {
         std::cout << p << std::endl;
-    }
+        std::cout << Diff::hashFile(p) << std::endl;
+    }*/
+
+    std::cout << Snapshots::generateSnapshotHash(trackableFiles) << std::endl;
+
+    Snapshots::Snapshot s("", trackableFiles);
+
+    s.record(repoPath);
 
     return 0;
 }
