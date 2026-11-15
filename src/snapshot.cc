@@ -2,6 +2,7 @@
 #include <openssl/sha.h>
 #include "include/snapshot.h"
 
+#include <fstream>
 #include <iostream>
 
 namespace FSTM::Snapshots
@@ -50,9 +51,17 @@ namespace FSTM::Snapshots
         return res.str();
     }
 
-    void Snapshot::write(const std::string &_repositoryPath) const
+    void Snapshot::write(const std::string &_repositoryPath, const std::string &_message) const
     {
         std::filesystem::create_directories(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm");
+
+        std::ofstream messageFile(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm/message.txt");
+        messageFile << _message;
+        messageFile.close();
+
+        std::ofstream parentFile(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm/parent");
+        parentFile << this -> parentId;
+        parentFile.close();
 
         for (const auto &file : this -> filePaths)
         {

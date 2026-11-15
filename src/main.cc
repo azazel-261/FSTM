@@ -29,11 +29,13 @@ int main(int argc, char *argv[])
     CLI::App app {"FSTM - a small c++ VCS"};
 
     std::string repoPathArg = ".";
-    app.add_option("-r,--repository", repoPathArg, "(OPTIONAL) path to the repository, defaults to the current directory");
+    app.add_option("-r,--repository", repoPathArg, "(OPTIONAL) Path to the repository, defaults to the current directory");
 
     CLI::App *init_command = app.add_subcommand("init", "Initialize a new repository");
 
+    std::string message;
     CLI::App *snapshot_command = app.add_subcommand("snapshot", "Create a snapshot");
+    snapshot_command -> add_option("-m,--message", message, "(OPTIONAL) A description to attach to your snapshot");
 
     std::string pathArg;
 
@@ -58,18 +60,17 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    std::string repoPath;
-    try
-    {
-        repoPath = findRepositoryPath(repoPathArg).string();
-    } catch (const std::runtime_error &e)
-    {
-        std::cout << e.what() << std::endl;
-        return -1;
-    }
-
     if (*track_command)
     {
+        std::string repoPath;
+        try
+        {
+            repoPath = findRepositoryPath(repoPathArg).string();
+        } catch (const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
         if (pathArg == "*")
         {
             const auto trackableFiles = Tracker::getTrackableFiles(repoPath);
@@ -91,6 +92,15 @@ int main(int argc, char *argv[])
     }
     if (*untrack_command)
     {
+        std::string repoPath;
+        try
+        {
+            repoPath = findRepositoryPath(repoPathArg).string();
+        } catch (const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
         if (pathArg == "*")
         {
             Tracker::untrackAll(repoPath);
@@ -108,6 +118,15 @@ int main(int argc, char *argv[])
     }
     if (*ignore_command)
     {
+        std::string repoPath;
+        try
+        {
+            repoPath = findRepositoryPath(repoPathArg).string();
+        } catch (const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
         if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
         {
             std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
@@ -119,6 +138,15 @@ int main(int argc, char *argv[])
     }
     if (*unignore_command)
     {
+        std::string repoPath;
+        try
+        {
+            repoPath = findRepositoryPath(repoPathArg).string();
+        } catch (const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
         if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
         {
             std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
@@ -128,16 +156,38 @@ int main(int argc, char *argv[])
         std::cout << "Removed from blacklist " << pathArg << std::endl;
         return 0;
     }
-
-    Snapshots::Snapshot s(repoPath, "", Tracker::getTrackableFiles(repoPath));
-    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
-
-    auto changedFiles = Diff::findChangedFiles(repoPath, s.filePaths);
-
-    for (const auto &file : changedFiles)
+    if (*snapshot_command)
     {
-        std::cout << file << std::endl;
+        std::string repoPath;
+        try
+        {
+            repoPath = findRepositoryPath(repoPathArg).string();
+        } catch (const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
+        auto changedFiles = Diff::findChangedFiles(repoPath, Tracker::getTrackedFiles(repoPath));
+        if (changedFiles.empty())
+        {
+            std::cout << "No changes in the tracked files since last snapshot. Try using fstm track * to track all your files" << std::endl;
+            return 0;
+        }
+        std::string currentId = Filesystem::getCurrentId(repoPath);
+        Snapshots::Snapshot s(repoPath, currentId, changedFiles);
+        if (std::filesystem::exists(repoPath + "/.fstm/snapshots/" + s.id))
+        {
+            std::cout << "A snapshot with the same hash already exists: " << s.id << std::endl;
+            return -1;
+        }
+        Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
+        s.write(repoPath, message);
+        fs.write(repoPath + "/.fstm/snapshots/" + s.id);
+        Filesystem::setCurrent(repoPath, s.id);
+        std::cout << "Successfully created snapshot " << s.id << std::endl;
+        return 0;
     }
+    std::cout << "No command provided. Try using fstm --help for help" << std::endl;
 
     return 0;
 }

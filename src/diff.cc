@@ -57,7 +57,6 @@ namespace FSTM::Diff
 
         for (const auto &file : trackedFiles)
         {
-            std::cout << "Checking for changes in file " << file << std::endl;
             if (!fs.latestFileIds.contains(file))
             {
                 out.push_back(file);
@@ -65,7 +64,6 @@ namespace FSTM::Diff
             }
 
             std::string latestFileVersion = repoPath + "/.fstm/snapshots/" + fs.latestFileIds[file] + "/" + file;
-            std::cout << "Comparing against latest available: " << latestFileVersion << std::endl;
 
             if (!FileDiff::compare(latestFileVersion, file))
             {
