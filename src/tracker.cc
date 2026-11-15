@@ -16,6 +16,24 @@ namespace FSTM::Tracker
         return !rel.empty() && rel.native()[0] != '.';
     }
 
+    std::vector<std::string> getTrackedFiles(const std::string& _repositoryPath)
+    {
+        std::vector<std::string> out;
+        std::ifstream tracked(_repositoryPath + "/.fstm/tracked");
+
+        if (!tracked) return {};
+
+        std::string buffer;
+
+        while (std::getline(tracked, buffer))
+        {
+            if (buffer.empty()) continue;
+            out.push_back(buffer);
+        }
+
+        return out;
+    }
+
     bool checkIfIgnored(const std::string& _repositoryPath, const std::string &_path)
     {
         if (is_subpath(_path, _repositoryPath + "/.fstm")) return true;
@@ -167,6 +185,62 @@ namespace FSTM::Tracker
         tracked.close();
     }
 
+    void blacklistFile(const std::string &_repositoryPath, const std::string &_filePath)
+    {
+        if (!std::filesystem::exists(_filePath))
+        {
+            return;
+        }
+        if (checkIfIgnored(_repositoryPath, _filePath))
+        {
+            return;
+        }
+        std::fstream blacklistFile(_repositoryPath + "/.fstm/blacklist", std::ios::in | std::ios::app);
+
+        std::string buffer;
+
+        while (std::getline(blacklistFile, buffer))
+        {
+            if (buffer.empty()) continue;
+            if (std::filesystem::equivalent(_repositoryPath + "/" + buffer, _filePath))
+            {
+                blacklistFile.close();
+                return;
+            }
+        }
+
+        blacklistFile.clear();
+
+        blacklistFile << std::filesystem::relative(_filePath, _repositoryPath).string() << std::endl;
+        blacklistFile.close();
+    }
+    void unblacklistFile(const std::string &_repositoryPath, const std::string &_filePath)
+    {
+        std::ifstream oldBlacklist(_repositoryPath + "/.fstm/blacklist");
+        if (!oldBlacklist) return;
+
+        std::string buffer;
+
+        std::ofstream newBlacklist(_repositoryPath + "/.fstm/blacklist.tmp");
+
+        if (oldBlacklist){
+            while (std::getline(oldBlacklist, buffer))
+            {
+                if (buffer.empty()) continue;
+                if (!std::filesystem::equivalent(_repositoryPath + "/" + buffer, _filePath))
+                {
+                    newBlacklist << buffer << std::endl;
+                }
+            }
+
+            oldBlacklist.close();
+            newBlacklist.close();
+
+            remove((_repositoryPath + "/.fstm/blacklist").c_str());
+            rename((_repositoryPath + "/.fstm/blacklist.tmp").c_str(), (_repositoryPath + "/.fstm/blacklist").c_str());
+        }
+    }
+
     std::vector<std::string> getTrackableFilesRecursive(const std::string& _repositoryPath, const std::string &_path, const std::vector<std::string> &_cachedIgnored)
     {
         std::vector<std::string> out;
@@ -182,7 +256,7 @@ namespace FSTM::Tracker
             }
             else
             {
-                out.push_back(iPath);
+                out.push_back(std::filesystem::relative(iPath, _repositoryPath).string());
             }
         }
         return out;

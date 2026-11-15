@@ -6,24 +6,26 @@
 
 namespace FSTM::Snapshots
 {
-    Snapshot::Snapshot(const std::string &_id, const std::string &_parentId, std::vector<std::string> _filePaths)
+    Snapshot::Snapshot(const std::string &_repositoryPath, const std::string &_id, const std::string &_parentId, std::vector<std::string> _filePaths)
     {
         this -> id = _id;
         this -> parentId = _parentId;
+        this -> repositoryPath = _repositoryPath;
 
         this -> filePaths = std::move(_filePaths);
     }
 
-    Snapshot::Snapshot(const std::string &_parentId, std::vector<std::string> _filePaths)
+    Snapshot::Snapshot(const std::string &_repositoryPath, const std::string &_parentId, std::vector<std::string> _filePaths)
     {
         this -> parentId = _parentId;
+        this -> repositoryPath = _repositoryPath;
 
         this -> filePaths = std::move(_filePaths);
 
-        this -> id = generateSnapshotHash(this -> filePaths);
+        this -> id = generateSnapshotHash(_repositoryPath, this -> filePaths);
     }
 
-    std::string generateSnapshotHash(const std::vector<std::string> &_filePaths)
+    std::string generateSnapshotHash(const std::string &_repositoryPath, const std::vector<std::string> &_filePaths)
     {
         SHA256_CTX context;
 
@@ -31,7 +33,7 @@ namespace FSTM::Snapshots
 
         for (const auto &file : _filePaths)
         {
-            std::string hash = Diff::hashFile(file);
+            std::string hash = Diff::hashFile(_repositoryPath + "/" + file);
             SHA256_Update(&context, hash.c_str(), hash.length());
         }
 
@@ -54,9 +56,9 @@ namespace FSTM::Snapshots
 
         for (const auto &file : this -> filePaths)
         {
-            std::filesystem::path path = file;
-            std::filesystem::path from = std::filesystem::absolute(std::filesystem::path(file));
-            std::filesystem::path to = absolute(std::filesystem::path(_repositoryPath + "/.fstm/snapshots/" + this -> id + path.relative_path().string()));
+            std::filesystem::path path = _repositoryPath + "/" + file;
+            std::filesystem::path from = std::filesystem::absolute(std::filesystem::path(_repositoryPath + "/" + file));
+            std::filesystem::path to = absolute(std::filesystem::path(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/" + std::filesystem::relative(path, _repositoryPath).string()));
             if (!std::filesystem::exists(path))
             {
                 continue;

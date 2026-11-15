@@ -13,7 +13,11 @@ namespace FSTM::Tracker
 
     void trackFile(const std::string &_repositoryPath, const std::string &_filePath);
     void untrackFile(const std::string &_repositoryPath, const std::string &_filePath);
+    void blacklistFile(const std::string &_repositoryPath, const std::string &_filePath);
+    void unblacklistFile(const std::string &_repositoryPath, const std::string &_filePath);
     void untrackAll(const std::string &_repositoryPath);
+
+    std::vector<std::string> getTrackedFiles(const std::string& _repositoryPath);
 
     std::vector<std::string> loadIgnored(const std::string& _repositoryPath);
     std::vector<std::string> getTrackableFiles(const std::string& _repositoryPath, const std::string &_startingPath = ".");

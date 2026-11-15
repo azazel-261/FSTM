@@ -106,6 +106,38 @@ int main(int argc, char *argv[])
         std::cout << "Stopped tracking " << pathArg << std::endl;
         return 0;
     }
+    if (*ignore_command)
+    {
+        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
+        {
+            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
+            return -1;
+        }
+        Tracker::blacklistFile(repoPath, pathArg);
+        std::cout << "Blacklisted " << pathArg << std::endl;
+        return 0;
+    }
+    if (*unignore_command)
+    {
+        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
+        {
+            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
+            return -1;
+        }
+        Tracker::unblacklistFile(repoPath, pathArg);
+        std::cout << "Removed from blacklist " << pathArg << std::endl;
+        return 0;
+    }
+
+    Snapshots::Snapshot s(repoPath, "", Tracker::getTrackableFiles(repoPath));
+    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
+
+    auto changedFiles = Diff::findChangedFiles(repoPath, s.filePaths);
+
+    for (const auto &file : changedFiles)
+    {
+        std::cout << file << std::endl;
+    }
 
     return 0;
 }

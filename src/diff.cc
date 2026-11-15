@@ -6,6 +6,8 @@
 #include <sstream>
 #include <openssl/sha.h>
 
+#include "include/fs.h"
+
 namespace FSTM::Diff
 {
     std::string hashFile(const std::string &_path)
@@ -41,6 +43,37 @@ namespace FSTM::Diff
         stream.close();
 
         return res.str();
+    }
+
+    std::vector<std::string> findChangedFiles(const std::string &repoPath, std::vector<std::string> trackedFiles)
+    {
+        std::vector<std::string> out;
+
+        std::string latestId = Filesystem::getCurrentId(repoPath);
+
+        if (latestId.empty()) return trackedFiles;
+
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + latestId);
+
+        for (const auto &file : trackedFiles)
+        {
+            std::cout << "Checking for changes in file " << file << std::endl;
+            if (!fs.latestFileIds.contains(file))
+            {
+                out.push_back(file);
+                continue;
+            }
+
+            std::string latestFileVersion = repoPath + "/.fstm/snapshots/" + fs.latestFileIds[file] + "/" + file;
+            std::cout << "Comparing against latest available: " << latestFileVersion << std::endl;
+
+            if (!FileDiff::compare(latestFileVersion, file))
+            {
+                out.push_back(file);
+            }
+        }
+
+        return out;
     }
 
     Diff::Diff(const DiffAction _action)
