@@ -56,25 +56,26 @@ namespace FSTM::Snapshots
         {
             std::filesystem::path path = file;
             std::filesystem::path from = std::filesystem::absolute(std::filesystem::path(file));
-            std::cout << "From: " << from << std::endl;
             std::filesystem::path to = absolute(std::filesystem::path(_repositoryPath + "/.fstm/snapshots/" + this -> id + path.relative_path().string()));
-            std::cout << "To: " << to << std::endl;
             if (!std::filesystem::exists(path))
             {
-                std::cout << "Source file doesn't exist: " << std::filesystem::absolute(file) << std::endl;
                 continue;
             };
             if (std::filesystem::is_directory(path))
             {
-                std::cout << "Source file is a directory (what?): " << std::filesystem::absolute(file) << std::endl;
                 continue;
             }
             if (!std::filesystem::exists(to.parent_path()))
             {
-                std::cout << "Creating directory for: " << absolute(to.parent_path()) << std::endl;
                 std::cout << std::filesystem::create_directories(to.parent_path()) << std::endl;
             }
-            std::filesystem::copy(from, to);
+            try
+            {
+                std::filesystem::copy(from, to);
+            } catch (const std::filesystem::filesystem_error &e)
+            {
+                std::cout << e.what() << std::endl;
+            }
         }
     }
 }

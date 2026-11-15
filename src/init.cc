@@ -12,4 +12,7 @@ void initRepository(const std::string &path)
 
     std::ofstream blacklistFile(path + "/.fstm/blacklist", std::ios_base::app);
     blacklistFile.close();
+
+    std::ofstream currentFile(path + "/.fstm/current", std::ios_base::app);
+    currentFile.close();
 }

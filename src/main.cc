@@ -1,5 +1,6 @@
 #include <iostream>
 #include "include/diff.h"
+#include "include/fs.h"
 #include "include/snapshot.h"
 #include "include/init.h"
 #include "include/tracker.h"
@@ -33,11 +34,14 @@ int main(int argc, char *argv[])
         std::cout << Diff::hashFile(p) << std::endl;
     }*/
 
-    std::cout << Snapshots::generateSnapshotHash(trackableFiles) << std::endl;
-
     Snapshots::Snapshot s("", trackableFiles);
 
     s.record(repoPath);
+
+    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
+
+    fs.write(repoPath + "/.fstm/snapshots/" + s.id);
+    Filesystem::setCurrent(repoPath, s.id);
 
     return 0;
 }
