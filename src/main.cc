@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
     std::string pathArg;
 
-    CLI::App *track_command = app.add_subcommand("track", "Track a file or directory, * for all files in the repository");
+    CLI::App *track_command = app.add_subcommand("track", "Track a file or directory, * for all files in the repository. Blacklisted files are excluded from this operation");
     track_command -> add_option("path", pathArg, "Path to the file or directory to be tracked") -> required();
 
     CLI::App *untrack_command = app.add_subcommand("untrack", "Untrack a file or directory, * for all files in the repository");
@@ -133,6 +133,7 @@ int main(int argc, char *argv[])
             return -1;
         }
         Tracker::blacklistFile(repoPath, pathArg);
+        Tracker::untrackFile(repoPath, pathArg);
         std::cout << "Blacklisted " << pathArg << std::endl;
         return 0;
     }
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
         fs.write(repoPath + "/.fstm/snapshots/" + s.id);
         Filesystem::setCurrent(repoPath, s.id);
         std::cout << "Successfully created snapshot " << s.id << std::endl;
+        Tracker::untrackAll(repoPath);
         return 0;
     }
     std::cout << "No command provided. Try using fstm --help for help" << std::endl;

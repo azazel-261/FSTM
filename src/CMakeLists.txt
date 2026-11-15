@@ -1,1 +1,1 @@
-add_executable(app main.cc diff.cc snapshot.cc init.cc tracker.cc fs.cc)
+add_executable(fstm main.cc diff.cc snapshot.cc init.cc tracker.cc fs.cc)
