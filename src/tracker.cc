@@ -99,6 +99,15 @@ namespace FSTM::Tracker
         {
             return;
         }
+        if (std::filesystem::is_directory(_filePath))
+        {
+            auto trackable = getTrackableFiles(_repositoryPath, _filePath);
+            for (const auto &file : trackable)
+            {
+                trackFile(_repositoryPath, file);
+            }
+            return;
+        }
         std::fstream trackedFile(_repositoryPath + "/.fstm/tracked", std::ios::in | std::ios::app);
 
         std::string buffer;
@@ -106,7 +115,7 @@ namespace FSTM::Tracker
         while (std::getline(trackedFile, buffer))
         {
             if (buffer.empty()) continue;
-            if (std::filesystem::path(buffer) == std::filesystem::path(_filePath))
+            if (std::filesystem::equivalent(_repositoryPath + "/" + buffer, _filePath))
             {
                 trackedFile.close();
                 return;
@@ -115,12 +124,21 @@ namespace FSTM::Tracker
 
         trackedFile.clear();
 
-        trackedFile << _filePath << std::endl;
+        trackedFile << std::filesystem::relative(_filePath, _repositoryPath).string() << std::endl;
         trackedFile.close();
     }
 
     void untrackFile(const std::string &_repositoryPath, const std::string &_filePath)
     {
+        if (std::filesystem::is_directory(_filePath))
+        {
+            auto trackable = getTrackableFiles(_repositoryPath, _filePath);
+            for (const auto &file : trackable)
+            {
+                untrackFile(_repositoryPath, file);
+            }
+            return;
+        }
         std::ifstream oldTracked(_repositoryPath + "/.fstm/tracked");
 
         std::string buffer;
@@ -130,7 +148,7 @@ namespace FSTM::Tracker
         while (std::getline(oldTracked, buffer))
         {
             if (buffer.empty()) continue;
-            if (std::filesystem::path(buffer) != std::filesystem::path(_filePath))
+            if (!std::filesystem::equivalent(_repositoryPath + "/" + buffer, _filePath))
             {
                 newTracked << buffer << std::endl;
             }
@@ -141,6 +159,12 @@ namespace FSTM::Tracker
 
         remove((_repositoryPath + "/.fstm/tracked").c_str());
         rename((_repositoryPath + "/.fstm/tracked.tmp").c_str(), (_repositoryPath + "/.fstm/tracked").c_str());
+    }
+
+    void untrackAll(const std::string &_repositoryPath)
+    {
+        std::ofstream tracked(_repositoryPath + "/.fstm/tracked", std::ios::trunc);
+        tracked.close();
     }
 
     std::vector<std::string> getTrackableFilesRecursive(const std::string& _repositoryPath, const std::string &_path, const std::vector<std::string> &_cachedIgnored)
@@ -164,10 +188,10 @@ namespace FSTM::Tracker
         return out;
     }
 
-    std::vector<std::string> getTrackableFiles(const std::string& _repositoryPath)
+    std::vector<std::string> getTrackableFiles(const std::string& _repositoryPath, const std::string &_startingPath)
     {
         auto ignored = loadIgnored(_repositoryPath);
 
-        return getTrackableFilesRecursive(_repositoryPath, _repositoryPath, ignored);
+        return getTrackableFilesRecursive(_repositoryPath, _startingPath, ignored);
     }
 }

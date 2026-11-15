@@ -25,6 +25,7 @@ namespace FSTM::Diff
     };
 
     std::string hashFile(const std::string &_path);
+    std::vector<std::string> findChangedFiles(const std::string &repoPath, std::vector<std::string> trackedFiles);
 
     class Diff
     {

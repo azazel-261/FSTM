@@ -21,7 +21,7 @@ namespace FSTM::Snapshots
         Snapshot(const std::string &_id, const std::string &_parentId, std::vector<std::string> _filePaths);
         Snapshot(const std::string &_parentId, std::vector<std::string> _filePaths);
 
-        void record(const std::string &_repositoryPath) const;
+        void write(const std::string &_repositoryPath) const;
     };
 }
 

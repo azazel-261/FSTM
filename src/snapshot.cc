@@ -48,7 +48,7 @@ namespace FSTM::Snapshots
         return res.str();
     }
 
-    void Snapshot::record(const std::string &_repositoryPath) const
+    void Snapshot::write(const std::string &_repositoryPath) const
     {
         std::filesystem::create_directories(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm");
 

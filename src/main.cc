@@ -1,4 +1,7 @@
 #include <iostream>
+
+#include "include/CLI11.hpp"
+
 #include "include/diff.h"
 #include "include/fs.h"
 #include "include/snapshot.h"
@@ -7,41 +10,102 @@
 
 using namespace FSTM;
 
+std::filesystem::path findRepositoryPath(const std::filesystem::path& _path)
+{
+    std::filesystem::path absPath = std::filesystem::absolute(_path);
+    while (!std::filesystem::exists(absPath / ".fstm"))
+    {
+        if (std::filesystem::equivalent(absPath, absPath.parent_path()))
+        {
+            throw std::runtime_error("Repository not found");
+        }
+        absPath = absPath.parent_path();
+    }
+    return absPath;
+}
+
 int main(int argc, char *argv[])
 {
-    /*auto diff = FSTM::Diff::PartialFileDiff::findFileDiff({
-        "hi", "hello", "hehehe"
-    }, {
-        "hi", "hellow", "new line", "newer line", "hehehe"
-    });
+    CLI::App app {"FSTM - a small c++ VCS"};
 
-    for (const auto& d : diff)
+    std::string repoPathArg = ".";
+    app.add_option("-r,--repository", repoPathArg, "(OPTIONAL) path to the repository, defaults to the current directory");
+
+    CLI::App *init_command = app.add_subcommand("init", "Initialize a new repository");
+
+    CLI::App *snapshot_command = app.add_subcommand("snapshot", "Create a snapshot");
+
+    std::string pathArg;
+
+    CLI::App *track_command = app.add_subcommand("track", "Track a file or directory, * for all files in the repository");
+    track_command -> add_option("path", pathArg, "Path to the file or directory to be tracked") -> required();
+
+    CLI::App *untrack_command = app.add_subcommand("untrack", "Untrack a file or directory, * for all files in the repository");
+    untrack_command -> add_option("path", pathArg, "Path to the file or directory to be untracked") -> required();
+
+    CLI::App *ignore_command = app.add_subcommand("blacklist", "Add a file or a folder to the blacklist, to prevent it from being tracked");
+    ignore_command -> add_option("path", pathArg, "Path to the file or directory to be blacklisted") -> required();
+
+    CLI::App *unignore_command = app.add_subcommand("unblacklist", "Remove a file or a folder from the blacklist");
+    unignore_command -> add_option("path", pathArg, "Path to the file or directory to be removed from the blacklist") -> required();
+
+    CLI11_PARSE(app, argc, argv);
+
+    if (*init_command)
     {
-        std::cout << d.targetLine << ": " << d.oldContent << " -> " << d.newContent << std::endl;
-    }*/
+        initRepository(repoPathArg);
+        std::cout << "Repository created successfully" << std::endl;
+        return 0;
+    }
 
-    /*if (argc < 2)
-        return -1;*/
-
-    std::string repoPath = ".";
-    // trackFile(repoPath, "example_folder/example3.txt");
-
-    const auto trackableFiles = Tracker::getTrackableFiles(repoPath);
-
-    /*for (const auto &p : trackableFiles)
+    std::string repoPath;
+    try
     {
-        std::cout << p << std::endl;
-        std::cout << Diff::hashFile(p) << std::endl;
-    }*/
+        repoPath = findRepositoryPath(repoPathArg).string();
+    } catch (const std::runtime_error &e)
+    {
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
 
-    Snapshots::Snapshot s("", trackableFiles);
-
-    s.record(repoPath);
-
-    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
-
-    fs.write(repoPath + "/.fstm/snapshots/" + s.id);
-    Filesystem::setCurrent(repoPath, s.id);
+    if (*track_command)
+    {
+        if (pathArg == "*")
+        {
+            const auto trackableFiles = Tracker::getTrackableFiles(repoPath);
+            for (const auto &file : trackableFiles)
+            {
+                Tracker::trackFile(repoPath, file);
+            }
+            std::cout << "Tracking all files" << std::endl;
+            return 0;
+        }
+        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
+        {
+            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
+            return -1;
+        }
+        Tracker::trackFile(repoPath, pathArg);
+        std::cout << "Started tracking " << pathArg << std::endl;
+        return 0;
+    }
+    if (*untrack_command)
+    {
+        if (pathArg == "*")
+        {
+            Tracker::untrackAll(repoPath);
+            std::cout << "Removed all files from tracking" << std::endl;
+            return 0;
+        }
+        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
+        {
+            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
+            return -1;
+        }
+        Tracker::untrackFile(repoPath, pathArg);
+        std::cout << "Stopped tracking " << pathArg << std::endl;
+        return 0;
+    }
 
     return 0;
 }
