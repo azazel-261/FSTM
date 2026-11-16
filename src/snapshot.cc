@@ -5,28 +5,17 @@
 #include <fstream>
 #include <iostream>
 
+#include "external/include/rapidyaml.v0.16.0.singlesrc.hpp"
+
 namespace FSTM::Snapshots
 {
-    Snapshot::Snapshot(const std::string &_repositoryPath, const std::string &_id, const std::string &_parentId, std::vector<std::string> _filePaths)
+    Snapshot::Snapshot(const std::string &_id, std::vector<std::string> _filePaths)
     {
         this -> id = _id;
-        this -> parentId = _parentId;
-        this -> repositoryPath = _repositoryPath;
-
         this -> filePaths = std::move(_filePaths);
     }
 
-    Snapshot::Snapshot(const std::string &_repositoryPath, const std::string &_parentId, std::vector<std::string> _filePaths)
-    {
-        this -> parentId = _parentId;
-        this -> repositoryPath = _repositoryPath;
-
-        this -> filePaths = std::move(_filePaths);
-
-        this -> id = generateSnapshotHash(_repositoryPath, this -> filePaths);
-    }
-
-    std::string generateSnapshotHash(const std::string &_repositoryPath, const std::vector<std::string> &_filePaths)
+    std::string Snapshot::generateSnapshotHash(const std::string &_repositoryPath, const std::vector<std::string> &_filePaths)
     {
         SHA256_CTX context;
 
@@ -51,18 +40,9 @@ namespace FSTM::Snapshots
         return res.str();
     }
 
-    void Snapshot::write(const std::string &_repositoryPath, const std::string &_message) const
+    void Snapshot::write(const std::string &_repositoryPath) const
     {
         std::filesystem::create_directories(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm");
-
-        std::ofstream messageFile(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm/message.txt");
-        messageFile << _message;
-        messageFile.close();
-
-        std::ofstream parentFile(_repositoryPath + "/.fstm/snapshots/" + this -> id + "/.fstm/parent");
-        parentFile << this -> parentId;
-        parentFile.close();
-
         for (const auto &file : this -> filePaths)
         {
             std::filesystem::path path = _repositoryPath + "/" + file;
@@ -88,5 +68,102 @@ namespace FSTM::Snapshots
                 std::cout << e.what() << std::endl;
             }
         }
+    }
+
+    void Snapshot::writeMessage(const std::string &_snapshotPath, const std::string &_message)
+    {
+        std::ofstream messageFile(_snapshotPath + "/.fstm/message.txt");
+        messageFile << _message;
+        messageFile.close();
+    }
+
+    std::string Snapshot::readMessage(const std::string &_snapshotPath)
+    {
+        std::ifstream messageFile(_snapshotPath + "/.fstm/message.txt");
+        if (!messageFile) return {};
+
+        std::ostringstream out;
+        std::string buffer;
+
+        while (std::getline(messageFile, buffer))
+        {
+            out << buffer << std::endl;
+        }
+
+        return out.str();
+    }
+
+    SnapshotData::SnapshotData()
+    {
+        this -> parentIds = {};
+    }
+
+    SnapshotData::SnapshotData(std::vector<std::string> _parentIds)
+    {
+        this -> parentIds = std::move(_parentIds);
+    }
+
+    std::string SnapshotData::emitYAML() const
+    {
+        ryml::Tree tree;
+        ryml::NodeRef root = tree.rootref();
+        root.set_map();
+
+        ryml::NodeRef parentIdsNode = root.append_child();
+        parentIdsNode.set_seq();
+        parentIdsNode.set_key("parent_ids");
+
+        for (const auto &parent : parentIds)
+        {
+            ryml::NodeRef entry = parentIdsNode.append_child();
+            entry.set_val(ryml::csubstr(parent.data(), parent.size()));
+        }
+
+        return ryml::emitrs_yaml<std::string>(tree);
+    }
+
+    SnapshotData SnapshotData::loadYAML(const std::string &_data)
+    {
+        SnapshotData out;
+        ryml::Tree tree = ryml::parse_in_arena(ryml::csubstr(_data.data(), _data.size()));
+
+        for (ryml::NodeRef parentIdsNode = tree["parent_ids"]; const auto &c : parentIdsNode.children())
+        {
+            const ryml::csubstr yParentStr = c.val();
+            std::string parent(yParentStr.str, yParentStr.len);
+            out.parentIds.push_back(parent);
+        }
+
+        return out;
+    }
+
+    void SnapshotData::write(const std::string &_snapshotPath) const
+    {
+        std::ofstream snapshotDataFile(_snapshotPath + "/.fstm/snapshot.yml");
+        snapshotDataFile << this -> emitYAML();
+        snapshotDataFile.close();
+    }
+
+    SnapshotData SnapshotData::load(const std::string &_snapshotPath)
+    {
+        std::ifstream fsFile(_snapshotPath + "/.fstm/fs.yml");
+
+        if (!fsFile)
+        {
+            throw std::runtime_error("Snapshot data file not present or failed to open");
+        }
+
+        SnapshotData out;
+
+        std::ostringstream data;
+        std::string buffer;
+
+        while (std::getline(fsFile, buffer))
+        {
+            if (buffer.empty()) continue;
+            data << buffer << std::endl;
+        }
+
+        return loadYAML(data.str());
     }
 }

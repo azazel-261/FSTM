@@ -27,9 +27,16 @@ std::filesystem::path findRepositoryPath(const std::filesystem::path& _path)
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG
-    Snapshots::Snapshot s(".", "", Tracker::getTrackableFiles("."));
-    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(".", s);
+    std::string repoPath = ".";
+    std::cout << "DEBUG MODE! THIS EXECUTABLE SHOULD NOT BE SHIPPED" << std::endl;
+    Snapshots::Snapshot s(repoPath, {}, Tracker::getTrackableFiles(repoPath));
+    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
     std::cout << fs.emitYAML() << std::endl;
+    std::cout << s.emitYAML() << std::endl;
+    /*s.write(repoPath, "Hellow");
+    fs.write(repoPath + "/.fstm/snapshots/" + s.id);*/
+    Filesystem::Filesystem loaded = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + s.id);
+    std::cout << loaded.emitYAML() << std::endl;
 #endif
 
 #ifndef DEBUG
@@ -182,7 +189,7 @@ int main(int argc, char *argv[])
             return 0;
         }
         std::string currentId = Filesystem::getCurrentId(repoPath);
-        Snapshots::Snapshot s(repoPath, currentId, changedFiles);
+        Snapshots::Snapshot s(repoPath, {currentId}, changedFiles);
         if (std::filesystem::exists(repoPath + "/.fstm/snapshots/" + s.id))
         {
             std::cout << "A snapshot with the same hash already exists: " << s.id << std::endl;

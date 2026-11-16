@@ -1,7 +1,3 @@
-//
-// Created by georg on 14.11.2026.
-//
-
 #include "include/fs.h"
 
 #include <fstream>
@@ -42,12 +38,12 @@ namespace FSTM::Filesystem
         this -> latestFileIds = std::move(_latestFileIds);
     }
 
-    Filesystem Filesystem::fromSnapshot(const std::string &_repositoryPath, const Snapshots::Snapshot &_snapshot)
+    Filesystem Filesystem::fromSnapshot(const std::string &_repositoryPath, const Snapshots::Snapshot &_snapshot, const std::vector<std::string> &_snapshotParents)
     {
         Filesystem out;
-        if (!_snapshot.parentId.empty())
+        if (_snapshotParents.empty())
         {
-            out = load(_repositoryPath + "/.fstm/snapshots/" + _snapshot.parentId);
+            out = load(_repositoryPath + "/.fstm/snapshots/" + _snapshotParents[0]);
         }
         for (const auto &file : _snapshot.filePaths)
         {
@@ -56,7 +52,7 @@ namespace FSTM::Filesystem
         return out;
     }
 
-    std::string Filesystem::emitYAML()
+    std::string Filesystem::emitYAML() const
     {
         ryml::Tree tree;
         ryml::NodeRef root = tree.rootref();
@@ -97,7 +93,7 @@ namespace FSTM::Filesystem
 
     Filesystem Filesystem::load(const std::string &_path)
     {
-        std::ifstream fsFile(_path + "/.fstm/fs");
+        std::ifstream fsFile(_path + "/.fstm/fs.yml");
 
         if (!fsFile)
         {
@@ -106,32 +102,23 @@ namespace FSTM::Filesystem
 
         Filesystem out;
 
-        std::string id;
+        std::ostringstream data;
         std::string buffer;
 
         while (std::getline(fsFile, buffer))
         {
             if (buffer.empty()) continue;
-            if (id.empty()) id = buffer;
-            else
-            {
-                out.latestFileIds[id] = buffer;
-                id.clear();
-            }
+            data << buffer << std::endl;
         }
 
-        return out;
+        return loadYAML(data.str());
     }
 
-    void Filesystem::write(const std::string &_path)
+    void Filesystem::write(const std::string &_snapshotPath) const
     {
-        std::ofstream fsFile(_path + "/.fstm/fs");
+        std::ofstream fsFile(_snapshotPath + "/.fstm/fs.yml");
 
-        for (const auto &[file, id] : this -> latestFileIds)
-        {
-            fsFile << file << '\n';
-            fsFile << id << std::endl;
-        }
+        fsFile << this -> emitYAML();
 
         fsFile.close();
     }
