@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "include/CLI11.hpp"
+#include "external/include/CLI11.hpp"
 
 #include "include/diff.h"
 #include "include/fs.h"
@@ -26,6 +26,13 @@ std::filesystem::path findRepositoryPath(const std::filesystem::path& _path)
 
 int main(int argc, char *argv[])
 {
+#ifdef DEBUG
+    Snapshots::Snapshot s(".", "", Tracker::getTrackableFiles("."));
+    Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(".", s);
+    std::cout << fs.emitYAML() << std::endl;
+#endif
+
+#ifndef DEBUG
     CLI::App app {"FSTM - a small c++ VCS"};
 
     std::string repoPathArg = ".";
@@ -192,4 +199,5 @@ int main(int argc, char *argv[])
     std::cout << "No command provided. Try using fstm --help for help" << std::endl;
 
     return 0;
+#endif
 }

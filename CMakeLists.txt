@@ -7,3 +7,4 @@ add_subdirectory(src)
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(fstm PRIVATE OpenSSL::Crypto)
+target_link_libraries(fstm PRIVATE rapidyaml)

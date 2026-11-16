@@ -4,6 +4,7 @@
 #include <map>
 
 #include "snapshot.h"
+#include "../external/include/rapidyaml.v0.16.0.singlesrc.hpp"
 
 namespace FSTM::Filesystem
 {
@@ -20,6 +21,8 @@ namespace FSTM::Filesystem
 
         static Filesystem fromSnapshot(const std::string &_repositoryPath, const Snapshots::Snapshot &_snapshot);
         static Filesystem load(const std::string &_path);
+        static Filesystem loadYAML(const std::string &_data);
+        std::string emitYAML();
         void write(const std::string &_path);
     };
 }
