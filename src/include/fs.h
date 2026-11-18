@@ -8,9 +8,6 @@
 
 namespace FSTM::Filesystem
 {
-    std::string getCurrentId(const std::string &_repositoryPath);
-    void setCurrent(const std::string &_repositoryPath, const std::string &_id);
-
     class Filesystem
     {
     public:

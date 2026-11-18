@@ -3,11 +3,36 @@
 #include <fstream>
 #include <iostream>
 
+#include "include/diff.h"
 #include "include/snapshot.h"
 #include "external/include/rapidyaml.v0.16.0.singlesrc.hpp"
+#include "include/fs.h"
+#include "include/tracker.h"
 
 namespace FSTM::Snapshots
 {
+    std::string getCurrentId(const std::string &_repositoryPath)
+    {
+        std::ifstream currentFile(_repositoryPath + "/.fstm/current");
+
+        if (!currentFile) return "";
+
+        if (std::string buffer; std::getline(currentFile, buffer))
+        {
+            return buffer;
+        }
+        return "";
+    }
+
+    void setCurrentId(const std::string &_repositoryPath, const std::string &_id)
+    {
+        std::ofstream currentFile(_repositoryPath + "/.fstm/current");
+
+        currentFile << _id;
+
+        currentFile.close();
+    }
+
     Snapshot::Snapshot(const std::string &_id, std::vector<std::string> _filePaths)
     {
         this -> id = _id;
@@ -175,8 +200,52 @@ namespace FSTM::Snapshots
         return loadYAML(data.str());
     }
 
-    void travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId)
+    void Snapshot::snapshotUnsaved(const std::string &_repoPath)
     {
+        std::string tempId = getCurrentId(_repoPath) + "_tmp";
+        const auto files = Tracker::getTrackableFiles(_repoPath);
+        const auto changedFiles = Diff::findChangedFiles(_repoPath, files);
+        if (changedFiles.empty()) return;
+        Snapshot s(tempId, changedFiles);
+        Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(_repoPath, s, {getCurrentId(_repoPath)});
+        SnapshotData data("main", {getCurrentId(_repoPath)});
+        s.write(_repoPath);
+        fs.write(_repoPath + "/.fstm/snapshots/" + tempId);
+        data.write(_repoPath + "/.fstm/snapshots/" + tempId);
+        setCurrentId(_repoPath, tempId);
+    }
 
+    void Snapshot::travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId)
+    {
+        if (getCurrentId(_repoPath) == _snapshotId) return;
+
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(_repoPath + "/.fstm/snapshots/" + _snapshotId);
+
+        // Scary, delete all
+        for (const auto &file: Tracker::getTrackableFiles(_repoPath))
+        {
+            std::filesystem::path filepath = file;
+            std::filesystem::remove(filepath);
+            if (std::filesystem::is_empty(std::filesystem::absolute(filepath).parent_path()))
+            {
+                if (!std::filesystem::equivalent(std::filesystem::absolute(filepath).parent_path(), _repoPath)
+                    && Tracker::checkIfIgnored(_repoPath, std::filesystem::relative(filepath, _repoPath).parent_path().string()))
+                {
+                    std::filesystem::remove(filepath.parent_path());
+                }
+            }
+        }
+
+        for (const auto &[file, id] : fs.latestFileIds)
+        {
+            std::filesystem::path from = _repoPath;
+            from /= ".fstm/snapshots"; from /= id; from /= file;
+            std::filesystem::path to = _repoPath;
+            to /= file;
+            std::filesystem::create_directories(to.parent_path());
+            std::filesystem::copy(from, to);
+        }
+
+        setCurrentId(_repoPath, _snapshotId);
     }
 }

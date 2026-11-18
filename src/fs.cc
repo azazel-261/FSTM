@@ -6,28 +6,6 @@
 
 namespace FSTM::Filesystem
 {
-    std::string getCurrentId(const std::string &_repositoryPath)
-    {
-        std::ifstream currentFile(_repositoryPath + "/.fstm/current");
-
-        if (!currentFile) return "";
-
-        if (std::string buffer; std::getline(currentFile, buffer))
-        {
-            return buffer;
-        }
-        return "";
-    }
-
-    void setCurrent(const std::string &_repositoryPath, const std::string &_id)
-    {
-        std::ofstream currentFile(_repositoryPath + "/.fstm/current");
-
-        currentFile << _id;
-
-        currentFile.close();
-    }
-
     Filesystem::Filesystem()
     {
         this -> latestFileIds = {};
@@ -41,9 +19,9 @@ namespace FSTM::Filesystem
     Filesystem Filesystem::fromSnapshot(const std::string &_repositoryPath, const Snapshots::Snapshot &_snapshot, const std::vector<std::string> &_snapshotParents)
     {
         Filesystem out;
-        if (_snapshotParents.empty())
+        if (!_snapshotParents.empty())
         {
-            out = load(_repositoryPath + "/.fstm/snapshots/" + _snapshotParents[0]);
+            if (!_snapshotParents[0].empty()) out = load(_repositoryPath + "/.fstm/snapshots/" + _snapshotParents[0]);
         }
         for (const auto &file : _snapshot.filePaths)
         {

@@ -49,7 +49,7 @@ namespace FSTM::Diff
     {
         std::vector<std::string> out;
 
-        std::string latestId = Filesystem::getCurrentId(repoPath);
+        std::string latestId = Snapshots::getCurrentId(repoPath);
 
         if (latestId.empty()) return trackedFiles;
 

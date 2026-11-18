@@ -3,6 +3,6 @@
 
 #include <string>
 
-void initRepository(const std::string &path);
+void initRepository(const std::string &_repositoryPath);
 
 #endif //FSTM_INIT_H

@@ -3,16 +3,21 @@
 #include <filesystem>
 #include <fstream>
 
-void initRepository(const std::string &path)
-{
-    std::filesystem::create_directories(path + "/.fstm/snapshots");
+#include "include/timeline.h"
 
-    std::ofstream trackedFile(path + "/.fstm/tracked", std::ios_base::app);
+void initRepository(const std::string &_repositoryPath)
+{
+    std::filesystem::create_directories(_repositoryPath + "/.fstm/snapshots");
+
+    std::ofstream trackedFile(_repositoryPath + "/.fstm/tracked", std::ios_base::app);
     trackedFile.close();
 
-    std::ofstream blacklistFile(path + "/.fstm/blacklist", std::ios_base::app);
+    std::ofstream blacklistFile(_repositoryPath + "/.fstm/blacklist", std::ios_base::app);
     blacklistFile.close();
 
-    std::ofstream currentFile(path + "/.fstm/current", std::ios_base::app);
+    std::ofstream currentFile(_repositoryPath + "/.fstm/current", std::ios_base::app);
     currentFile.close();
+
+    FSTM::Timelines::Timeline tm("main", "");
+    tm.writeInfoYAML(_repositoryPath);
 }

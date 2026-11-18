@@ -8,6 +8,7 @@
 #include "include/init.h"
 #include "include/tracker.h"
 #include "include/timeline.h"
+#include "include/commands.h"
 
 #define  MACRO_SEARCH_FOR_REPOSITORY(_dest, _searchPath) try \
         { \
@@ -87,113 +88,53 @@ int main(int argc, char *argv[])
     std::string timelineNameArg;
     CLI::App *timeline_command = app.add_subcommand("timeline", "Work with timelines");
 
-    CLI::App *timeline_create_command = app.add_subcommand("create", "Creates a new timeline from the current snapshot");
+    CLI::App *timeline_create_command = timeline_command -> add_subcommand("create", "Creates a new timeline from the current snapshot");
     timeline_create_command -> add_option("name", timelineNameArg, "The name of the timeline that will be created");
-    CLI::App *timeline_travel_command = app.add_subcommand("travel", "Moves you to the latest snapshot in the timeline");
+    CLI::App *timeline_travel_command = timeline_command -> add_subcommand("travel", "Moves you to the latest snapshot in the timeline");
     timeline_travel_command -> add_option("name", timelineNameArg, "The name of the destination timeline");
 
     CLI11_PARSE(app, argc, argv);
 
     if (*init_command)
     {
-        initRepository(repoPathArg);
-        std::cout << "Repository created successfully" << std::endl;
-        return 0;
+        return Commands::initCommand(repoPathArg);
     }
 
     if (*track_command)
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        if (pathArg == "*")
-        {
-            const auto trackableFiles = Tracker::getTrackableFiles(repoPath);
-            for (const auto &file : trackableFiles)
-            {
-                Tracker::trackFile(repoPath, file);
-            }
-            std::cout << "Tracking all files" << std::endl;
-            return 0;
-        }
-        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
-        {
-            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
-            return -1;
-        }
-        Tracker::trackFile(repoPath, pathArg);
-        std::cout << "Started tracking " << pathArg << std::endl;
-        return 0;
+        return Commands::fileTrackCommand(repoPath, pathArg);
     }
     if (*untrack_command)
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        if (pathArg == "*")
-        {
-            Tracker::untrackAll(repoPath);
-            std::cout << "Removed all files from tracking" << std::endl;
-            return 0;
-        }
-        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
-        {
-            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
-            return -1;
-        }
-        Tracker::untrackFile(repoPath, pathArg);
-        std::cout << "Stopped tracking " << pathArg << std::endl;
-        return 0;
+        return Commands::fileUntrackCommand(repoPath, pathArg);
     }
     if (*ignore_command)
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
-        {
-            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
-            return -1;
-        }
-        Tracker::blacklistFile(repoPath, pathArg);
-        Tracker::untrackFile(repoPath, pathArg);
-        std::cout << "Blacklisted " << pathArg << std::endl;
-        return 0;
+        return Commands::fileBlacklistCommand(repoPath, pathArg);
     }
     if (*unignore_command)
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        if (!std::filesystem::exists(pathArg) || !Tracker::is_subpath(pathArg, repoPath))
-        {
-            std::cout << "File doesn't exist or is outside the repository scope" << std::endl;
-            return -1;
-        }
-        Tracker::unblacklistFile(repoPath, pathArg);
-        std::cout << "Removed from blacklist " << pathArg << std::endl;
-        return 0;
+        return Commands::fileUnblacklistCommand(repoPath, pathArg);
     }
     if (*snapshot_create_command)
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        auto changedFiles = Diff::findChangedFiles(repoPath, Tracker::getTrackedFiles(repoPath));
-        if (changedFiles.empty())
-        {
-            std::cout << "No changes in the tracked files since last snapshot. Try using fstm track * to track all your files" << std::endl;
-            return 0;
-        }
-        std::string currentId = Filesystem::getCurrentId(repoPath);
-        Snapshots::Snapshot s(repoPath, changedFiles);
-        if (std::filesystem::exists(repoPath + "/.fstm/snapshots/" + s.id))
-        {
-            std::cout << "A snapshot with the same hash already exists: " << s.id << std::endl;
-            return -1;
-        }
-        Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(repoPath, s);
-        s.write(repoPath);
-        fs.write(repoPath + "/.fstm/snapshots/" + s.id);
-        Filesystem::setCurrent(repoPath, s.id);
-        std::cout << "Successfully created snapshot " << s.id << std::endl;
-        Tracker::untrackAll(repoPath);
-        return 0;
+        return Commands::snapshotCreateCommand(repoPath, message);
+    }
+    if (*snapshot_travel_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::snapshotTravelCommand(repoPath, targetId);
     }
     std::cout << "No command provided. Try using fstm --help for help" << std::endl;
 

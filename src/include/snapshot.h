@@ -8,6 +8,9 @@
 
 namespace FSTM::Snapshots
 {
+    std::string getCurrentId(const std::string &_repositoryPath);
+    void setCurrentId(const std::string &_repositoryPath, const std::string &_id);
+
     class Snapshot
     {
     public:
@@ -19,6 +22,10 @@ namespace FSTM::Snapshots
 
         static std::string readMessage(const std::string &_snapshotPath);
         static void writeMessage(const std::string &_snapshotPath, const std::string &_message);
+
+        static void travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId);
+
+        static void snapshotUnsaved(const std::string &_repoPath);
 
         static std::string generateSnapshotHash(const std::string &_repositoryPath, const std::vector<std::string> &_filePaths);
     };
