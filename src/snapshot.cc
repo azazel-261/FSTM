@@ -1,10 +1,9 @@
 #include <utility>
 #include <openssl/sha.h>
-#include "include/snapshot.h"
-
 #include <fstream>
 #include <iostream>
 
+#include "include/snapshot.h"
 #include "external/include/rapidyaml.v0.16.0.singlesrc.hpp"
 
 namespace FSTM::Snapshots
@@ -98,9 +97,10 @@ namespace FSTM::Snapshots
         this -> parentIds = {};
     }
 
-    SnapshotData::SnapshotData(std::vector<std::string> _parentIds)
+    SnapshotData::SnapshotData(std::string _timeline, std::vector<std::string> _parentIds)
     {
         this -> parentIds = std::move(_parentIds);
+        this -> timeline = std::move(_timeline);
     }
 
     std::string SnapshotData::emitYAML() const
@@ -116,8 +116,12 @@ namespace FSTM::Snapshots
         for (const auto &parent : parentIds)
         {
             ryml::NodeRef entry = parentIdsNode.append_child();
-            entry.set_val(ryml::csubstr(parent.data(), parent.size()));
+            entry.set_val(ryml::csubstr(parent.data(), parent.length()));
         }
+
+        ryml::NodeRef timelineNode = root.append_child();
+        timelineNode.set_key("timeline");
+        timelineNode.set_val(ryml::csubstr(this -> timeline.data(), this -> timeline.length()));
 
         return ryml::emitrs_yaml<std::string>(tree);
     }
@@ -133,6 +137,10 @@ namespace FSTM::Snapshots
             std::string parent(yParentStr.str, yParentStr.len);
             out.parentIds.push_back(parent);
         }
+
+        const ryml::NodeRef timelineNode = tree["timeline"];
+        const ryml::csubstr yTimelineStr = timelineNode.val();
+        out.timeline = std::string(yTimelineStr.str, yTimelineStr.len);
 
         return out;
     }
@@ -165,5 +173,10 @@ namespace FSTM::Snapshots
         }
 
         return loadYAML(data.str());
+    }
+
+    void travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId)
+    {
+
     }
 }

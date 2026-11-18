@@ -26,9 +26,10 @@ namespace FSTM::Snapshots
     {
     public:
         std::vector<std::string> parentIds;
+        std::string timeline;
 
         SnapshotData();
-        explicit SnapshotData(std::vector<std::string> _parentIds);
+        SnapshotData(std::string _timeline, std::vector<std::string> _parentIds);
 
         static SnapshotData loadYAML(const std::string &_data);
         [[nodiscard]] std::string emitYAML() const;
