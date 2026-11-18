@@ -23,7 +23,7 @@ namespace FSTM::Snapshots
         static std::string readMessage(const std::string &_snapshotPath);
         static void writeMessage(const std::string &_snapshotPath, const std::string &_message);
 
-        static void travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId);
+        static void travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId, const std::string &_setCurrentId = "");
 
         static void snapshotUnsaved(const std::string &_repoPath);
 

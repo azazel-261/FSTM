@@ -52,16 +52,22 @@ namespace FSTM::Commands
     {
         std::string targetSnapshot = _targetName;
         Snapshots::Snapshot::snapshotUnsaved(_repositoryPath);
+        bool temporary = false;
         if (std::filesystem::exists(_repositoryPath + "/.fstm/snapshots/" + _targetName + "_tmp"))
         {
             targetSnapshot += "_tmp";
+            temporary = true;
         }
         if (!std::filesystem::exists(_repositoryPath + "/.fstm/snapshots/" + _targetName))
         {
             std::cout << "Could not find the provided id" << std::endl;
             return -1;
         }
-        Snapshots::Snapshot::travelToSnapshot(_repositoryPath, targetSnapshot);
+        Snapshots::Snapshot::travelToSnapshot(_repositoryPath, targetSnapshot, _targetName);
+        if (temporary)
+        {
+            std::filesystem::remove_all(_repositoryPath + "/.fstm/snapshots/" + _targetName + "_tmp");
+        }
         return 0;
     }
 

@@ -215,7 +215,7 @@ namespace FSTM::Snapshots
         setCurrentId(_repoPath, tempId);
     }
 
-    void Snapshot::travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId)
+    void Snapshot::travelToSnapshot(const std::string &_repoPath, const std::string &_snapshotId, const std::string &_setCurrentId)
     {
         if (getCurrentId(_repoPath) == _snapshotId) return;
 
@@ -246,6 +246,6 @@ namespace FSTM::Snapshots
             std::filesystem::copy(from, to);
         }
 
-        setCurrentId(_repoPath, _snapshotId);
+        setCurrentId(_repoPath, _setCurrentId.empty() ? _snapshotId : _setCurrentId);
     }
 }
