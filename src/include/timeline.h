@@ -15,7 +15,11 @@ namespace FSTM::Timelines
 
         void writeInfoYAML(const std::string &_repositoryPath) const;
 
+        static void writeCurrent(const std::string &_repositoryPath, const std::string &_timelineName);
+        static std::string getCurrentName(const std::string &_repositoryPath);
+
         static std::vector<Timeline> loadTimelines(const std::string &_repositoryPath);
+        static Timeline loadByName(const std::string &_repositoryPath, const std::string &_timelineName);
     };
 }
 

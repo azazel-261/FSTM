@@ -1,7 +1,3 @@
-//
-// Created by georg on 18.11.2026.
-//
-
 #include "include/commands.h"
 
 #include <iostream>
@@ -63,11 +59,14 @@ namespace FSTM::Commands
             std::cout << "Could not find the provided id" << std::endl;
             return -1;
         }
+        std::cout << "Travelling to " << _targetName << std::endl;
         Snapshots::Snapshot::travelToSnapshot(_repositoryPath, targetSnapshot, _targetName);
         if (temporary)
         {
+            std::cout << "Cleaning up..." << std::endl;
             std::filesystem::remove_all(_repositoryPath + "/.fstm/snapshots/" + _targetName + "_tmp");
         }
+        std::cout << "Done!" << std::endl;
         return 0;
     }
 
