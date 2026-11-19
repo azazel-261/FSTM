@@ -54,14 +54,14 @@ int main(int argc, char *argv[])
         "Initialize a new repository");
 
     std::string message;
-    std::string targetId;
+    std::string targetIdArg;
     CLI::App *snapshot_command = app.add_subcommand("snapshot", "Manage snapshots");
     CLI::App *snapshot_create_command = snapshot_command -> add_subcommand("create",
         "Create a snapshot");
     snapshot_create_command -> add_option("-m,--message", message,
         "(OPTIONAL) A description to attach to your snapshot");
     CLI::App *snapshot_travel_command = snapshot_command -> add_subcommand("travel", "Move in time to another snapshot");
-    snapshot_travel_command -> add_option("id", targetId, "The id of the destination snapshot");
+    snapshot_travel_command -> add_option("id", targetIdArg, "The id of the destination snapshot");
 
     std::string pathArg;
 
@@ -89,9 +89,9 @@ int main(int argc, char *argv[])
     CLI::App *timeline_command = app.add_subcommand("timeline", "Work with timelines");
 
     CLI::App *timeline_create_command = timeline_command -> add_subcommand("create", "Creates a new timeline from the current snapshot");
-    timeline_create_command -> add_option("name", timelineNameArg, "The name of the timeline that will be created");
+    timeline_create_command -> add_option("name", timelineNameArg, "The name of the timeline that will be created") -> required();
     CLI::App *timeline_travel_command = timeline_command -> add_subcommand("travel", "Moves you to the latest snapshot in the timeline");
-    timeline_travel_command -> add_option("name", timelineNameArg, "The name of the destination timeline");
+    timeline_travel_command -> add_option("name", timelineNameArg, "The name of the destination timeline") -> required();
 
     CLI11_PARSE(app, argc, argv);
 
@@ -134,10 +134,22 @@ int main(int argc, char *argv[])
     {
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
-        return Commands::snapshotTravelCommand(repoPath, targetId);
+        return Commands::snapshotTravelCommand(repoPath, targetIdArg);
     }
-    std::cout << "No command provided. Try using fstm --help for help" << std::endl;
+    if (*timeline_create_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::timelineCreateCommand(repoPath, timelineNameArg);
+    }
+    if (*timeline_travel_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::timelineTravelCommand(repoPath, timelineNameArg);
+    }
 
+    std::cout << "No command provided. Try using fstm --help for help" << std::endl;
     return 0;
 #endif
 }

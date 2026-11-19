@@ -82,7 +82,7 @@ namespace FSTM::Snapshots
             }
             if (!std::filesystem::exists(to.parent_path()))
             {
-                std::cout << std::filesystem::create_directories(to.parent_path()) << std::endl;
+                std::filesystem::create_directories(to.parent_path());
             }
             try
             {
@@ -202,13 +202,15 @@ namespace FSTM::Snapshots
 
     void Snapshot::snapshotUnsaved(const std::string &_repoPath)
     {
-        std::string tempId = getCurrentId(_repoPath) + "_tmp";
+        std::string currentId = getCurrentId(_repoPath);
+        std::string tempId = currentId + "_tmp";
         const auto files = Tracker::getTrackableFiles(_repoPath);
         const auto changedFiles = Diff::findChangedFiles(_repoPath, files);
         if (changedFiles.empty()) return;
         Snapshot s(tempId, changedFiles);
-        Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(_repoPath, s, {getCurrentId(_repoPath)});
-        SnapshotData data("main", {getCurrentId(_repoPath)});
+        Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(_repoPath, s, {currentId});
+        SnapshotData parentData = SnapshotData::load(_repoPath + "/.fstm/snapshots/" + currentId);
+        SnapshotData data(parentData.timeline, {currentId});
         s.write(_repoPath);
         fs.write(_repoPath + "/.fstm/snapshots/" + tempId);
         data.write(_repoPath + "/.fstm/snapshots/" + tempId);

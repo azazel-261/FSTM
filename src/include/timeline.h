@@ -18,6 +18,7 @@ namespace FSTM::Timelines
         static void writeCurrent(const std::string &_repositoryPath, const std::string &_timelineName);
         static std::string getCurrentName(const std::string &_repositoryPath);
 
+        static bool checkIfLatest(const std::string &_repositoryPath, const std::string &_snapshotId);
         static std::vector<Timeline> loadTimelines(const std::string &_repositoryPath);
         static Timeline loadByName(const std::string &_repositoryPath, const std::string &_timelineName);
     };

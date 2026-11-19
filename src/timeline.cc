@@ -100,13 +100,16 @@ namespace FSTM::Timelines
             tree = ryml::parse_in_arena(ryml::csubstr(out.str().data(), out.str().length()));
             timelineFile.close();
         }
-        tree.rootref().set_map();
-        if (!timelineFile)
+        else
         {
+            tree.rootref().set_map();
             ryml::NodeRef currentNode = tree.rootref().append_child();
             currentNode.set_key("current");
             currentNode.set_val("");
         }
+
+        tree.rootref().set_map();
+
         if (tree.rootref().has_child("timelines"))
         {
             timelines = tree.rootref()["timelines"];
@@ -204,5 +207,11 @@ namespace FSTM::Timelines
             }
         }
         return {};
+    }
+
+    bool Timeline::checkIfLatest(const std::string &_repositoryPath, const std::string &_snapshotId)
+    {
+        const Timeline current = loadByName(_repositoryPath, getCurrentName(_repositoryPath));
+        return current.latestSnapshotId == _snapshotId;
     }
 }

@@ -19,5 +19,6 @@ void initRepository(const std::string &_repositoryPath)
     currentFile.close();
 
     FSTM::Timelines::Timeline tm("main", "");
+    FSTM::Timelines::Timeline::writeCurrent(_repositoryPath, tm.name);
     tm.writeInfoYAML(_repositoryPath);
 }
