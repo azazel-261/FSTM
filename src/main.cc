@@ -38,9 +38,7 @@ std::filesystem::path findRepositoryPath(const std::filesystem::path& _path)
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG
-    std::string repoPath = ".";
-    Timelines::Timeline tm("main", "example123456");
-    tm.writeInfoYAML(repoPath);
+    std::cout << "DEBUG MODE! DO NOT SHIP THIS EXECUTABLE" << std::endl;
 #endif
 
 #ifndef DEBUG
@@ -85,6 +83,8 @@ int main(int argc, char *argv[])
     unignore_command -> add_option("path", pathArg,
         "Path to the file or directory to be removed from the blacklist") -> required();
 
+    CLI::App *return_command = app.add_subcommand("return", "Reverts the entire filesystem workspace to the state of the current snapshot");
+
     std::string timelineNameArg;
     CLI::App *timeline_command = app.add_subcommand("timeline", "Work with timelines");
 
@@ -92,6 +92,10 @@ int main(int argc, char *argv[])
     timeline_create_command -> add_option("name", timelineNameArg, "The name of the timeline that will be created") -> required();
     CLI::App *timeline_travel_command = timeline_command -> add_subcommand("travel", "Moves you to the latest snapshot in the timeline");
     timeline_travel_command -> add_option("name", timelineNameArg, "The name of the destination timeline") -> required();
+
+    int timelineHistoryDepthArg = 15;
+    CLI::App *timeline_history_command = timeline_command -> add_subcommand("history", "View historical changes in the current timeline");
+    timeline_history_command -> add_option("-d,--depth", timelineHistoryDepthArg, "The maximum depth for the history");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -147,6 +151,18 @@ int main(int argc, char *argv[])
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
         return Commands::timelineTravelCommand(repoPath, timelineNameArg);
+    }
+    if (*timeline_history_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::timelineHistoryCommand(repoPath, timelineHistoryDepthArg);
+    }
+    if (*return_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::returnCommand(repoPath);
     }
 
     std::cout << "No command provided. Try using fstm --help for help" << std::endl;

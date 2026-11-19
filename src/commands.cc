@@ -48,7 +48,9 @@ namespace FSTM::Commands
         std::cout << "Initiating snapshot..." << std::endl;
         Filesystem::Filesystem fs = Filesystem::Filesystem::fromSnapshot(_repositoryPath, s, {currentId});
         std::string currentTimeline = Timelines::Timeline::getCurrentName(_repositoryPath);
-        Snapshots::SnapshotData data(currentTimeline, {currentId});
+        std::vector<std::string> parentIds = {};
+        if (!currentId.empty()) parentIds.push_back(currentId);
+        Snapshots::SnapshotData data(currentTimeline, parentIds);
         Timelines::Timeline tm = Timelines::Timeline::loadByName(_repositoryPath, currentTimeline);
 
         std::cout << "Writing..." << std::endl;
@@ -251,6 +253,44 @@ namespace FSTM::Commands
         std::cout << "Done!" << std::endl;
 
         Timelines::Timeline::writeCurrent(_repositoryPath, search.name);
+        return 0;
+    }
+
+    int timelineHistoryCommand(const std::string &_repositoryPath, int depth)
+    {
+        std::string currentId = Snapshots::getCurrentId(_repositoryPath);
+        if (currentId.empty())
+        {
+            std::cout << "Nothing to show" << std::endl;
+            return 0;
+        }
+        Snapshots::SnapshotData currentData = Snapshots::SnapshotData::load(_repositoryPath + "/.fstm/snapshots/" + currentId);
+        std::string currentTimeline = currentData.timeline;
+        int currentDepth = 0;
+        std::cout << "+-[" << currentTimeline << "]- " << Snapshots::Snapshot::readMessage(_repositoryPath + "/.fstm/snapshots/" + currentId);
+        while (currentDepth < depth && !currentData.parentIds.empty())
+        {
+            currentId = currentData.parentIds[0];
+            currentData = Snapshots::SnapshotData::load(_repositoryPath + "/.fstm/snapshots/" + currentId);
+            std::cout << "|" << std::endl;
+            std::cout << "+-";
+            if (currentData.timeline != currentTimeline)
+            {
+                currentTimeline = currentData.timeline;
+                std::cout << "[" << currentTimeline << "]";
+            }
+            std::cout << "- " << Snapshots::Snapshot::readMessage(_repositoryPath + "/.fstm/snapshots/" + currentId);
+            currentDepth++;
+        }
+        if (!currentData.parentIds.empty())
+        {
+            std::cout << "|" << std::endl << "..." << std::endl;
+        }
+        return 0;
+    }
+
+    int returnCommand(const std::string &_repositoryPath)
+    {
         return 0;
     }
 }

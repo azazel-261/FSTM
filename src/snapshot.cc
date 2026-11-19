@@ -179,14 +179,12 @@ namespace FSTM::Snapshots
 
     SnapshotData SnapshotData::load(const std::string &_snapshotPath)
     {
-        std::ifstream fsFile(_snapshotPath + "/.fstm/fs.yml");
+        std::ifstream fsFile(_snapshotPath + "/.fstm/snapshot.yml");
 
         if (!fsFile)
         {
             throw std::runtime_error("Snapshot data file not present or failed to open");
         }
-
-        SnapshotData out;
 
         std::ostringstream data;
         std::string buffer;
