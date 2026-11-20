@@ -1,13 +1,6 @@
 #include <iostream>
 
 #include "external/include/CLI11.hpp"
-
-#include "include/diff.h"
-#include "include/fs.h"
-#include "include/snapshot.h"
-#include "include/init.h"
-#include "include/tracker.h"
-#include "include/timeline.h"
 #include "include/commands.h"
 
 #define  MACRO_SEARCH_FOR_REPOSITORY(_dest, _searchPath) try \
@@ -97,6 +90,8 @@ int main(int argc, char *argv[])
     CLI::App *timeline_history_command = timeline_command -> add_subcommand("history", "View historical changes in the current timeline");
     timeline_history_command -> add_option("-d,--depth", timelineHistoryDepthArg, "The maximum depth for the history");
 
+    CLI::App *status_command = app.add_subcommand("status", "Display the current status of the repository");
+
     CLI11_PARSE(app, argc, argv);
 
     if (*init_command)
@@ -163,6 +158,12 @@ int main(int argc, char *argv[])
         std::string repoPath;
         MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
         return Commands::returnCommand(repoPath);
+    }
+    if (*status_command)
+    {
+        std::string repoPath;
+        MACRO_SEARCH_FOR_REPOSITORY(repoPath, repoPathArg);
+        return Commands::statusCommand(repoPath);
     }
 
     std::cout << "No command provided. Try using fstm --help for help" << std::endl;

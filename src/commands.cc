@@ -291,6 +291,76 @@ namespace FSTM::Commands
 
     int returnCommand(const std::string &_repositoryPath)
     {
+        std::string currentId = Snapshots::getCurrentId(_repositoryPath);
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(_repositoryPath + "/.fstm/snapshots/" + currentId);
+
+        for (const auto &file: Tracker::getTrackableFiles(_repositoryPath))
+        {
+            std::filesystem::path filepath = file;
+            std::filesystem::remove(filepath);
+            if (std::filesystem::is_empty(std::filesystem::absolute(filepath).parent_path()))
+            {
+                if (!std::filesystem::equivalent(std::filesystem::absolute(filepath).parent_path(), _repositoryPath)
+                    && Tracker::checkIfIgnored(_repositoryPath, std::filesystem::relative(filepath, _repositoryPath).parent_path().string()))
+                {
+                    std::filesystem::remove(filepath.parent_path());
+                }
+            }
+        }
+
+        for (const auto &[file, id] : fs.latestFileIds)
+        {
+            std::filesystem::path from = _repositoryPath;
+            from /= ".fstm/snapshots"; from /= id; from /= file;
+            std::filesystem::path to = _repositoryPath;
+            to /= file;
+            std::filesystem::create_directories(to.parent_path());
+            std::filesystem::copy(from, to);
+        }
+
+        return 0;
+    }
+
+    int statusCommand(const std::string &_repositoryPath)
+    {
+        std::cout << "Snapshot " << Snapshots::getCurrentId(_repositoryPath).substr(0, 5) <<
+            "... on timeline " << Timelines::Timeline::getCurrentName(_repositoryPath) << std::endl;
+        std::cout << "==========" << std::endl;
+        auto trackableFiles = Tracker::getTrackableFiles(_repositoryPath);
+        auto newFiles = Diff::findNewFiles(_repositoryPath, trackableFiles);
+        auto modifiedFiles = Diff::findModifiedFiles(_repositoryPath, trackableFiles);
+        auto deletedFiles = Diff::findDeletedFiles(_repositoryPath, trackableFiles);
+        if (!newFiles.empty())
+        {
+            std::cout << "New files:" << std::endl;
+            for (const auto &file : newFiles)
+            {
+                std::cout << file << std::endl;
+            }
+            std::cout << "==========" << std::endl;
+        }
+        if (!modifiedFiles.empty())
+        {
+            std::cout << "Modified files:" << std::endl;
+            for (const auto &file : modifiedFiles)
+            {
+                std::cout << file << std::endl;
+            }
+            std::cout << "==========" << std::endl;
+        }
+        if (!deletedFiles.empty())
+        {
+            std::cout << "Deleted files:" << std::endl;
+            for (const auto &file : deletedFiles)
+            {
+                std::cout << file << std::endl;
+            }
+            std::cout << "==========" << std::endl;
+        }
+        if (newFiles.empty() && modifiedFiles.empty() && deletedFiles.empty())
+        {
+            std::cout << "No changes to show" << std::endl;
+        }
         return 0;
     }
 }

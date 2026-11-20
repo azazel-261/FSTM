@@ -9,6 +9,8 @@ namespace FSTM::Commands
 
     int returnCommand(const std::string &_repositoryPath);
 
+    int statusCommand(const std::string &_repositoryPath);
+
     // Snapshots
     int snapshotCreateCommand(const std::string &_repositoryPath, const std::string &_message);
     int snapshotTravelCommand(const std::string &_repositoryPath, const std::string &_targetName);

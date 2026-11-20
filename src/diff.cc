@@ -3,10 +3,12 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #include <openssl/sha.h>
 
 #include "include/fs.h"
+#include "include/tracker.h"
 
 namespace FSTM::Diff
 {
@@ -45,17 +47,83 @@ namespace FSTM::Diff
         return res.str();
     }
 
-    std::vector<std::string> findChangedFiles(const std::string &repoPath, std::vector<std::string> trackedFiles)
+    std::vector<std::string> findNewFiles(const std::string &repoPath, std::vector<std::string> files)
+    {
+        std::string currentId = Snapshots::getCurrentId(repoPath);
+        if (currentId.empty()) return files;
+
+        std::vector<std::string> out;
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + currentId);
+
+        for (const auto &file : files)
+        {
+            if (!fs.latestFileIds.contains(file))
+            {
+                out.push_back(file);
+            }
+        }
+
+        return out;
+    }
+
+    std::vector<std::string> findDeletedFiles(const std::string &repoPath, std::vector<std::string> files)
+    {
+        std::string currentId = Snapshots::getCurrentId(repoPath);
+        if (currentId.empty()) return files;
+
+        std::vector<std::string> out;
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + currentId);
+
+        for (const auto &path: fs.latestFileIds | std::views::keys)
+        {
+            if (std::ranges::find_if(files.begin(), files.end(),
+                [path](const auto& file) { return path == file; }) == files.end())
+            {
+                out.push_back(path);
+            }
+        }
+
+        return out;
+    }
+
+    std::vector<std::string> findModifiedFiles(const std::string &repoPath, const std::vector<std::string>& files)
     {
         std::vector<std::string> out;
 
         std::string latestId = Snapshots::getCurrentId(repoPath);
 
-        if (latestId.empty()) return trackedFiles;
+        if (latestId.empty()) return {};
 
         Filesystem::Filesystem fs = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + latestId);
 
-        for (const auto &file : trackedFiles)
+        for (const auto &file : files)
+        {
+            if (!fs.latestFileIds.contains(file))
+            {
+                continue;
+            }
+
+            std::string latestFileVersion = repoPath + "/.fstm/snapshots/" + fs.latestFileIds[file] + "/" + file;
+
+            if (!FileDiff::compare(latestFileVersion, file))
+            {
+                out.push_back(file);
+            }
+        }
+        return out;
+    }
+
+    std::vector<std::string> findChangedFiles(const std::string &repoPath, std::vector<std::string> files)
+    {
+        std::vector<std::string> out;
+
+        std::string latestId = Snapshots::getCurrentId(repoPath);
+
+        if (latestId.empty()) return files;
+
+        Filesystem::Filesystem fs = Filesystem::Filesystem::load(repoPath + "/.fstm/snapshots/" + latestId);
+
+        for (const auto &file : files)
         {
             if (!fs.latestFileIds.contains(file))
             {

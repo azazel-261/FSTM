@@ -4,6 +4,8 @@
 #include <iostream>
 #include <utility>
 
+#include "include/tracker.h"
+
 namespace FSTM::Filesystem
 {
     Filesystem::Filesystem()
@@ -26,6 +28,11 @@ namespace FSTM::Filesystem
         for (const auto &file : _snapshot.filePaths)
         {
             out.latestFileIds[file] = _snapshot.id;
+        }
+        auto deletedFiles = Diff::findDeletedFiles(_repositoryPath, Tracker::getTrackableFiles(_repositoryPath));
+        for (const auto &deleted : deletedFiles)
+        {
+            out.latestFileIds.erase(deleted);
         }
         return out;
     }
